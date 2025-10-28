@@ -1,0 +1,26 @@
+#Bayesian MAP analysis 
+model {  
+ ## Likelihoods ##
+    for (i in 1:(N-1)) {
+		logit(p[i]) <- delta[i]
+		delta[i] ~ dnorm(beta0, tau)
+		resp[i] ~ dbin(p[i],n[i])      
+	   } 
+	logit(p[N]) <- theta.trt
+	theta.trt ~ dnorm(0,0.0001)
+	resp[N] ~ dbin(p[N],n[N])
+
+	beta1 <- theta.trt - delta[(N-1)]
+	effect <-p[N]-p[N-1]
+	precision_heterogeneity <- 1/(std_heterogeneity*std_heterogeneity)
+
+	#Half-normal prior for std of study effects
+	sigma_heterogeneity ~ dnorm(.00001, precision_heterogeneity)
+
+	#Precision of study effects
+	tau <- 1/(sigma_heterogeneity*sigma_heterogeneity)
+
+ 
+	beta0 ~ dnorm(0, 0.0001)
+
+}

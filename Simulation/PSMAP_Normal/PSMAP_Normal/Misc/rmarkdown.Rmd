@@ -1,0 +1,97 @@
+---
+title: "Untitled"
+output: html_document
+---
+```{r}
+
+
+
+data.test=list(
+  
+  Ntrials = 4,
+  
+  y = c(-0.357, -0.288, -0.186, -0.248),
+  
+  s = c(0.707, 0.217, 0.157, 0.163),
+  
+  Ntau = 1, tau.index=c(1,1,1,1),
+  
+  Prior.tau = structure(.Data=c(0,0.5),.Dim=c(1,2)),
+  
+  Prior.mu = c(0,2),
+  
+  p.exch = c(1,1,1,1),
+  
+  #p.exch = c(0.5,0.5,1,1),
+  
+  Prior.nex = matrix(c(0,2,0,2,0,2,0,2),ncol=2,nrow=4,byrow=TRUE)
+  
+)
+
+
+```
+
+
+
+
+```{r setup, include=FALSE}
+
+niter = 10000
+ model <-
+    jags.model(
+      file = "co_data.txt",
+      data = data.test,
+      n.chains = 1,
+      n.adapt = 0.2 * niter,
+      quiet = TRUE
+    )
+  update(model, n.iter = 0.2 * niter, progress.bar = 'none') # burn in
+  MAP_model <-
+    coda.samples(model,
+                 variable.names = parameters,
+                 thin = 5,
+                 n.iter = niter, progress.bar = 'none')
+```
+
+
+```{r}
+
+
+
+data.test=list(
+  
+  Ntrials = 4,
+  y = c(-0.357, -0.288, -0.186, -0.248),
+  s = c(0.707, 0.217, 0.157, 0.163),
+  Nstrata = 2, tau.index=c(1,1,2,2),
+  mu.index=c(1,1,2,2),
+  Prior.tau = matrix(c(0,1,0,1),ncol=2,nrow=2,byrow=TRUE),
+  Prior.mu = matrix(c(0,2,0,2),ncol=2,nrow=2,byrow=TRUE)
+)
+
+
+```
+
+
+
+
+```{r setup, include=FALSE}
+
+niter = 10000
+ model <-
+    jags.model(
+      file = "PSMAPNormal_v3.txt",
+      data = data.test,
+      n.chains = 1,
+      n.adapt = 0.2 * niter,
+      quiet = TRUE
+    )
+  update(model, n.iter = 0.2 * niter, progress.bar = 'none') # burn in
+  MAP_model <-
+    coda.samples(model,
+                 variable.names = "theta",
+                 thin = 5,
+                 n.iter = niter, progress.bar = 'none')
+  
+ summary(MAP_model)
+```

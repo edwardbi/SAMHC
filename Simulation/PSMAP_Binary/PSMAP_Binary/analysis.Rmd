@@ -1,0 +1,282 @@
+---
+title: "Summary"
+output: html_document
+---
+
+
+```{r}
+
+n_sims=10000
+final_means1=matrix(0,n_sims,4)
+final_bias1=matrix(0,n_sims,4)
+final_MSE1=matrix(0,n_sims,4)
+final_width1=matrix(0,n_sims,4)
+final_coverage1=matrix(0,n_sims,4)
+final_rejection1=matrix(0,n_sims,4)
+final_ess1=matrix(0,n_sims,4)
+final_samples1=list()
+j=1
+for (i in 11:110){
+#Load the results files
+filename=paste0("results_0_150_",i,".RData") 
+load(file=filename)
+result_i=result_sum
+final_means1[(50*(j-1)+1):(50*j),]=result_i[[1]]
+final_bias1[(50*(j-1)+1):(50*j),]=result_i[[2]]
+final_MSE1[(50*(j-1)+1):(50*j),]=result_i[[3]]
+final_width1[(50*(j-1)+1):(50*j),]=result_i[[4]]
+final_coverage1[(50*(j-1)+1):(50*j),]=result_i[[5]]
+final_rejection1[(50*(j-1)+1):(50*j),]=result_i[[6]]
+final_ess1[(50*(j-1)+1):(50*j),]=result_i[[7]]
+s=1
+for(k in (50*(j-1)+1):(50*j)){
+final_samples1[[k]]=result_i[[8]][[s]]
+s=s+1
+}  
+j=j+1
+}
+
+```
+
+```{r}
+colMeans(final_means1)
+colMeans(final_bias1)*100
+colMeans(final_MSE1)*100
+colMeans(final_rejection1)*100
+colMeans(final_ess1)
+```
+
+
+```{r}
+n_sims=5000
+final_means=matrix(0,n_sims,4)
+final_bias=matrix(0,n_sims,4)
+final_MSE=matrix(0,n_sims,4)
+final_width=matrix(0,n_sims,4)
+final_coverage=matrix(0,n_sims,4)
+final_rejection=matrix(0,n_sims,4)
+final_ess=matrix(0,n_sims,4)
+final_samples=list()
+j=1
+for (i in 11:110){
+filename=paste0("results_0.7_150_",i,".RData")
+load(file=filename)
+result_i=result_sum
+final_means[(50*(j-1)+1):(50*j),]=result_i[[1]]
+final_bias[(50*(j-1)+1):(50*j),]=result_i[[2]]
+final_MSE[(50*(j-1)+1):(50*j),]=result_i[[3]]
+final_width[(50*(j-1)+1):(50*j),]=result_i[[4]]
+final_coverage[(50*(j-1)+1):(50*j),]=result_i[[5]]
+final_rejection[(50*(j-1)+1):(50*j),]=result_i[[6]]
+final_ess[(50*(j-1)+1):(50*j),]=result_i[[7]]
+s=1
+for(k in (50*(j-1)+1):(50*j)){
+final_samples[[k]]=result_i[[8]][[s]]
+s=s+1
+}  
+j=j+1
+}
+
+```
+
+
+```{r}
+colMeans(final_means)
+colMeans(final_bias)*100
+colMeans(final_MSE)*100
+colMeans(final_rejection)*100
+colMeans(final_ess)
+```
+
+
+
+```{r}
+###Functions ----
+
+test_results = function(results, cutoff) {
+  
+  
+  limits= quantile(results[[1]],probs=c(cutoff,1-cutoff))
+  
+  reject=c()
+  for(i in 1:length(cutoff)){
+  lower = limits[i]
+
+  upper = limits[i+length(cutoff)]
+
+  reject[i] = !((lower < 0 ) & (upper > 0))
+  }
+ 
+
+  return(reject)
+
+}
+
+ 
+
+calib.power.type1 = function(list1, cutoff) {
+
+ 
+  
+  cutoff_results = sapply(list1,FUN = test_results, cutoff = cutoff)
+
+  type1 = rowSums(cutoff_results)/dim(cutoff_results)[2]
+  
+  
+  return(type1)
+
+}
+
+ 
+
+calib.power = function(results.type1, results.power, cutoff) {
+
+  # Finds the calibrated power for each of the methods so type 1 error is fixed at approximately 5%
+
+  # results.type1: MCMC chains when there is no treatment effect
+
+  # results.power: MCMC chains when there is a treatment effect
+
+  # cutoff: grid values to search over to find when type 1 error is roughly 5%
+
+  
+
+  results.return = list()
+
+  all.data = list(PSMAP=list(), MAP = list(),
+
+                 PSPower = list(), PowerPrior=list())
+
+ 
+
+  for(i in 1:length(results.type1)) {
+    
+    all.data$PSMAP[[i]] = results.type1[[i]]$PSMAP
+
+    all.data$MAP[[i]] = results.type1[[i]]$MAP
+
+    all.data$PSPower[[i]] = results.type1[[i]]$PSPower
+
+    all.data$PowerPrior[[i]] = results.type1[[i]]$PowerPrior
+
+  }
+
+ 
+
+  all.trt = list(PSMAP=list(), MAP = list(),
+
+                 PSPower = list(), PowerPrior=list())
+
+ 
+
+  for(i in 1:length(results.power)) {
+
+    all.trt$PSMAP[[i]] = results.power[[i]]$PSMAP
+
+    all.trt$MAP[[i]] = results.power[[i]]$MAP
+    
+    all.trt$PSPower[[i]] = results.power[[i]]$PSPower
+
+    all.trt$PowerPrior[[i]] = results.power[[i]]$PowerPrior
+
+
+  }
+
+ 
+
+  
+
+  
+
+  
+
+  all.type1 = sapply(all.data,FUN = calib.power.type1, cutoff = cutoff)
+
+ 
+
+  cutoff_inds = apply(all.type1,MARGIN = 2, FUN = function(x) max(which(x <= 0.05)))
+
+ 
+
+  results.return$exact = apply(all.type1,MARGIN = 2, FUN = function(x) sum(x == 0.05))
+
+ 
+
+  cutoff_inds[is.infinite(cutoff_inds)] = 1
+
+  cutoff.power = cutoff[cutoff_inds]
+
+ 
+
+  all.power = sapply(all.trt,FUN = calib.power.type1, cutoff = cutoff.power)
+
+ 
+
+  tmp = diag(all.power)
+
+  names(tmp) = colnames(all.power)
+
+ 
+
+  results.return$power = tmp
+
+  results.return$alltype1 = all.type1
+
+  results.return$allpower = all.power
+
+  return(results.return)
+
+}
+
+```
+
+
+```{r} 
+ 
+
+### Obtain calibrated power ----
+
+ 
+
+ 
+
+data.frame(power = apply(rejection_results_trt,MARGIN = 1,FUN = sum)/dim(rejection_results_trt)[2],
+
+           type1 = apply(rejection_results_no,MARGIN = 1,FUN = sum)/dim(rejection_results_trt)[2], row.names = names(overall_results_trt[[1]]))
+
+ 
+
+data.frame(power = apply(rejection_results_trt3,MARGIN = 1,FUN = sum)/dim(rejection_results_trt3)[2],
+
+           type1 = apply(rejection_results_no3,MARGIN = 1,FUN = sum)/dim(rejection_results_trt3)[2], row.names = names(overall_results_trt3[[1]]))
+
+ 
+
+ 
+
+cutoff = seq(0.00001, 0.025, length.out = 400)
+
+tic()
+
+tmp = calib.power(results.type1 = final_samples1,results.power = final_samples, cutoff = cutoff)
+
+toc()
+
+ 
+
+tic()
+
+tmp1 = calib.power(results.type1 = overall_results_no,results.power = overall_results_trt, cutoff = cutoff)
+
+toc()
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

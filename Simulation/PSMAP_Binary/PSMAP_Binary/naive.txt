@@ -1,0 +1,19 @@
+#Naive Bayesian analysis 
+model {  
+	logit(p[1]) <- beta0
+	resp[1] ~ dbin(p[1],n[1])
+
+	logit(p[2]) <- theta.trt 
+	resp[2] ~ dbin(p[2],n[2])
+
+	beta0 ~ dnorm(0, 0.0001)
+	theta.trt ~ dnorm(0, 0.0001)
+
+	beta1 = theta.trt - beta0
+	effect = p[2]-p[1]
+	
+	# For ESS
+	logit_p.pred <- beta0
+	p.pred <- 1 / (1 + exp(-logit_p.pred))
+
+}

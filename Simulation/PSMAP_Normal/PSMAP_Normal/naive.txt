@@ -1,0 +1,21 @@
+#Bayesian MAP analysis 
+model {  
+ ## Likelihoods ##
+	ybar.control ~ dnorm(mu.control,tau.control*n.con)
+	ybar.trt ~ dnorm(mu.trt, tau.trt*n.trt)
+
+	mu.control ~ dnorm(0, 0.0001)
+	mu.trt ~ dnorm(0, 0.0001)
+
+	a.con = n.con/2 + alpha.sigma
+	b.con = (n.con/2)*(sigma.hat.control + ((y1 - mu.control)^2)) + beta.sigma
+	tau.control ~ dgamma(a.con,b.con)
+
+	a.trt = n.trt/2 + alpha.sigma
+	b.trt = (n.trt/2)*(sigma.hat.trt + ((y2 - mu.trt)^2)) + beta.sigma
+	tau.trt ~ dgamma(a.trt,b.trt)
+
+	effect = mu.trt - mu.control
+
+
+}

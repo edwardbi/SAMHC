@@ -1,0 +1,17 @@
+#Bayesian Power Prior analysis 
+model {  
+	## Likelihoods ##
+	for (i in 1:2) {
+		resp[i] ~ dbin(p[i],n[i])
+	} 
+
+	p[1] ~ dbeta(alpha * hist + a0, alpha * (n.hist - hist) + b0)
+
+	logit(p[2]) <- theta.trt
+	theta.trt ~ dnorm(0,0.0001)
+
+	beta0 <- logit(p[1])
+	effect <- p[2] - p[1]	
+
+	
+}

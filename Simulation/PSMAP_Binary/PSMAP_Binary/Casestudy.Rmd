@@ -1,0 +1,114 @@
+---
+title: "Casestudy"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+set.seed(1000)
+N_0=300
+N_1=100
+Age_0=rnorm(N_0,-2,10.6)
+Age_1=rnorm(N_1,-5,10.8)
+#Age_0=rnorm(N_0,65,10.6)
+#Age_1=rnorm(N_1,63,10.8)
+n_male_0=rbinom(1,N_0,0.465)
+n_male_1=rbinom(1,N_1,0.43)
+Sex_0=sample(c(rep(1,n_male_0),rep(0,N_0-n_male_0)))
+Sex_1=sample(c(rep(1,n_male_1),rep(0,N_1-n_male_1)))
+
+n_asian_0=rbinom(1,N_0,0.1)
+n_asian_1=rbinom(1,N_1,0.18)
+Race_0=sample(c(rep(1,n_asian_0),rep(0,N_0-n_asian_0)))
+Race_1=sample(c(rep(1,n_asian_1),rep(0,N_1-n_asian_1)))
+
+n_smoker_0=rbinom(1,N_0,0.45)
+n_smoker_1=rbinom(1,N_1,0.39)
+Smoking_0=sample(c(rep(1,n_smoker_0),rep(0,N_0-n_smoker_0)))
+Smoking_1=sample(c(rep(1,n_smoker_1),rep(0,N_1-n_smoker_1)))
+n_brain_0=rbinom(1,N_0,0.3)
+n_brain_1=rbinom(1,N_1,0.37)
+Brain_0=sample(c(rep(1,n_brain_0),rep(0,N_0-n_brain_0)))
+Brain_1=sample(c(rep(1,n_brain_1),rep(0,N_1-n_brain_1)))
+
+x_hist=data.frame(age=Age_0,sex=Sex_0,race=Race_0,smoke=Smoking_0,brain=Brain_0)
+x_hist=as.matrix(x_hist)
+y_hist=gen_Y(x_hist,beta=matrix(c(0.1,-0.2,-0.1,0.15,0.1)),var_eps=1)
+
+
+x_cur=data.frame(age=Age_1,sex=Sex_1,race=Race_1,smoke=Smoking_1,brain=Brain_1)
+x_cur=as.matrix(x_cur)
+y_cur=gen_Y(x_cur,beta=matrix(c(0.1,-0.2,-0.1,0.15,0.1)),var_eps=1)
+
+```
+
+```{r}
+mean(y_hist)
+mean(y_cur)
+```
+
+
+```{r}
+ regroup_data<-PS_regroup(x_hist,y_hist,x_cur,y_cur,p=5)
+ plot(regroup_data$PS)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+dta=regroup_data$PS
+#colnames(dta$data)=c("age","sex","smoking","brain metastasis")
+dta$data[,3]=as.factor(dta$data[,3])
+dta$data[,4]=as.factor(dta$data[,4])
+dta$data[,5]=as.factor(dta$data[,5])
+dta$data[,6]=as.factor(dta$data[,6])
+plotRweBalance(dta)
+```
+
+```{r}
+
+ps_map_prior=PS_MAP.fit(tau.init=1, target.ESS=50,   n.cur=regroup_data$n.cur, ybar.hist = regroup_data$Ybar.hist,n.hist=regroup_data$n.hist, 
+                         overlap_coefficients = regroup_data$rS,  niter=100000,lim=c(0.0001,2), data.indiv=y_cur) 
+
+```
+
+
+
+```{r}
+N=50000
+noborrow=rbeta(N,44,100-44+1)
+psmap_post=rbeta(N,23+44,100-44+29)
+prior_data=data.frame(dis=c(noborrow,psmap_post),group=factor(rep(c("No borrowing","AS-MAP"), each=N)))
+target=data.frame(value=c(0.36))
+library(ggplot2)
+# Basic density
+p <- ggplot(prior_data, aes(x=dis)) +
+  geom_density(alpha=0.2,aes(group = group,
+                     fill  = group,
+                     linetype = group,color=group))+geom_vline(data=target, aes(xintercept=value),
+             linetype="dashed")+
+  scale_fill_manual(values=c("#E69F00", "#56B4E9")) +
+    labs(x =expression(theta), y = "Density")+
+    theme_bw() 
+p
+
+
+```
+
+
+
+```{r}
+N=100000
+x1=rnorm(N,0,1)
+x2=rnorm(N,0,0.5)
+
+p_data=data.frame(dis=c(x1,x2),group=factor(rep(c("Prior w/ ESS=5","Prior w/ ESS=20"), each=N)))
+
+p <- ggplot(p_data, aes(x=dis,group = group,
+                     color=group)) +
+
+  geom_density(alpha=0.2)+scale_color_brewer(palette="Set2") + theme_minimal()
+
+
+```

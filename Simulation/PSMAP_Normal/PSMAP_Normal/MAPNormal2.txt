@@ -1,0 +1,37 @@
+#Bayesian MAP analysis 
+model {  
+ ## Likelihoods ##
+	for(i in 1:n.hist) {
+		ybar[i] ~ dnorm(theta[i], tau.hat[i])
+		theta[i] ~ dnorm(mu,tau)
+	}
+	ybar.control ~ dnorm(theta[n.hist+1],tau.control*n.con)
+
+	theta[n.hist + 1] ~ dnorm(mu,tau)
+
+	ybar.trt ~ dnorm(mu.trt, tau.trt*n.trt)
+
+	precision_heterogeneity <- 1/(std_heterogeneity*std_heterogeneity)
+
+	#Half-normal prior for std of study effects
+	sigma_heterogeneity ~ dnorm(.00001, precision_heterogeneity)
+
+	#Precision of study effects
+	tau <- 1/(sigma_heterogeneity*sigma_heterogeneity)
+
+ 
+	mu ~ dnorm(0, 0.0001)
+	mu.trt ~ dnorm(0, 0.0001)
+
+	a.con = n.con/2 + alpha.sigma
+	b.con = (n.con/2)*(sigma.hat.control + ((y1 - theta[n.hist+1])^2)) + beta.sigma
+	tau.control ~ dgamma(a.con,b.con)
+
+	a.trt = n.trt/2 + alpha.sigma
+	b.trt = (n.trt/2)*(sigma.hat.trt + ((y2 - mu.trt)^2)) + beta.sigma
+	tau.trt ~ dgamma(a.trt,b.trt)
+
+	effect = mu.trt - theta[n.hist+1]
+
+
+}

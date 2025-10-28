@@ -1,0 +1,26 @@
+#Bayesian MAP analysis 
+model {  
+  ## Likelihoods ##
+  for (i in 1:N) {
+    logit(p[i]) <- delta[i]
+    delta[i] ~ dnorm(beta0, tau)
+    resp[i] ~ dbin(p[i],n[i])      
+  } 
+  
+  precision_heterogeneity <- 1/(std_heterogeneity*std_heterogeneity)
+  
+  #Half-normal prior for std of study effects
+  sigma_heterogeneity ~ dnorm(.00001, precision_heterogeneity)
+  #Precision of study effects
+  tau <- 1/(sigma_heterogeneity*sigma_heterogeneity)
+  
+  beta0 ~ dnorm(0, 0.0001)
+  
+  
+  
+  # To get ESS
+  logit_p.pred ~  dnorm(beta0, tau)
+  
+  p.pred <- 1 / (1 + exp(-logit_p.pred))
+  
+}
